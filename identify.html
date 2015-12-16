@@ -62,7 +62,9 @@
 			</header>
 
 			<div>
-				<button id="toneGenStartStop" onclick="toggleToneGeneration()">Start tone generator</button>
+				<button id="toneGenToggle" onclick="toggleToneGeneration()">Start tone generator</button>
+				<input id="toneFrequencySlider" type="range" max="20000" min="0" value="440" step="10" onchange="updateFrequency()"/>
+				<p>Selected frequency: <span id="selectedFrequencySpan">440</span>Hz</p>
 			</div>
 
 			<footer>
