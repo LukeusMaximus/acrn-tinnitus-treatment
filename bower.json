@@ -1,0 +1,25 @@
+{
+  "name": "acrn-tinnitus-treatment",
+  "homepage": "https://github.com/LukeusMaximus/acrn-tinnitus-treatment",
+  "authors": [
+    "LukeusMaximus <lukeusmaximus39@gmail.com>"
+  ],
+  "description": "A browser based tinnitus treatment.",
+  "main": "",
+  "moduleType": [],
+  "keywords": [
+    "tinnitus"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "~3.3.6"
+  }
+}
