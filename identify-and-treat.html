@@ -26,7 +26,7 @@
 		<script src="bower_components/jquery/dist/jquery.min.js"></script>
 		<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 
-		<script src="javascripts/identify.js"></script>
+		<script src="javascripts/identify-and-treat.js"></script>
 	</head>
 
 	<body>
@@ -44,6 +44,7 @@
 				</div>
 
 				<!-- Collect the nav links, forms, and other content for toggling -->
+				<!--
 				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 					<ul class="nav navbar-nav">
 						<li class="active">
@@ -54,17 +55,22 @@
 						</li>
 					</ul>
 				</div>
+			-->
 			</div>
 		</nav>
 		<div class="container">
 			<header>
-				<h1>Identify your tinnitus frequency</h1>
+				<h1>Identify and treat</h1>
 			</header>
 
 			<div>
-				<button id="toneGenToggle" onclick="toggleToneGeneration()">Start tone generator</button>
-				<input id="toneFrequencySlider" type="range" max="20000" min="0" value="440" step="10" onchange="updateFrequency()"/>
+				<button id="toneGenButton" onclick="startToneGeneration()">Switch to tone generator</button>
+				<button id="treatButton" onclick="startTreatmet()">Switch to treatment mode</button>
+				<label for="toneFrequencySlider"></label>
+				<input id="toneFrequencySlider" name="toneFrequencySlider" type="range" max="20000" min="0" value="440" step="10" onchange="updateFrequency()"/>
 				<p>Selected frequency: <span id="selectedFrequencySpan">440</span>Hz</p>
+				<label for="volumeSlider"></label>
+				<input id="volumeSlider" name="volumeSlider" type="range" max="1" min="0" value="0.5" step="0.05" onchange="updateVolume()"/>
 			</div>
 
 			<footer>
