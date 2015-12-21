@@ -64,14 +64,18 @@
 			</header>
 
 			<div>
-				<button id="toneGenButton" onclick="app.switchMode('tone')">Switch to tone generator</button>
-				<button id="treatButton" onclick="app.switchMode('acrn')">Switch to treatment mode</button>
-				<button id="offButton" onclick="app.switchMode('off')">Switch off</button>
-				<label for="toneFrequencySlider"></label>
-				<input id="toneFrequencySlider" name="toneFrequencySlider" type="range" max="20000" min="0" value="440" step="10" onchange="app.updateFrequency()"/>
-				<p>Selected frequency: <span id="selectedFrequencySpan">440</span>Hz</p>
-				<label for="volumeSlider"></label>
-				<input id="volumeSlider" name="volumeSlider" type="range" max="1" min="0" value="0.5" step="0.05" onchange="app.updateVolume()"/>
+				<div>
+					<button id="toneGenButton" onclick="app.switchMode('tone')">Switch to tone generator</button>
+					<button id="treatButton" onclick="app.switchMode('acrn')">Switch to treatment mode</button>
+					<button id="offButton" onclick="app.switchMode('off')">Switch off</button>
+				</div>
+				<div>
+					<label for="toneFrequencySlider">Frequency</label>
+					<input id="toneFrequencySlider" name="toneFrequencySlider" type="range" max="20000" min="0" value="440" step="10" onchange="app.updateFrequency()"/>
+					<p>Selected frequency: <span id="selectedFrequencySpan">440</span>Hz</p>
+					<label for="volumeSlider">Volume</label>
+					<input id="volumeSlider" name="volumeSlider" type="range" max="1" min="0" value="0.5" step="0.05" onchange="app.updateVolume()"/>
+				</div>
 			</div>
 
 			<footer>

@@ -148,7 +148,7 @@ function createApp() {
 	var toneGeneratorNodes = createToneGeneratorNodes();
 	var toneMaker = createToneMaker(toneGeneratorNodes);
 	var acrnTreatment = createACRNTreatment(toneGeneratorNodes);
-	var mode = "tone";
+	var mode = "off";
 	var desiredFrequency = 440;
 	var desiredVolume = 0.5;
 
@@ -158,7 +158,7 @@ function createApp() {
 		} else if(mode === "tone") {
 			desiredFrequency = parseInt(document.querySelector("#toneFrequencySlider").value);
 			document.querySelector("#selectedFrequencySpan").innerText = desiredFrequency;
-			toneMaker.frequency.value = desiredFrequency;
+			toneMaker.frequency = desiredFrequency;
 			window.localStorage["tinnitusFrequency"] = desiredFrequency;
 		}
 	}
@@ -204,15 +204,18 @@ function createApp() {
 				break;
 		}
 		mode = newMode;
-		window.localStorage["tinnitusFrequency"] = newMode;
+		window.localStorage["applicationMode"] = newMode;
 	}
 
 	function initialise() {
 		if(window.localStorage["tinnitusFrequency"]) {
 			desiredFrequency = parseInt(window.localStorage["tinnitusFrequency"]);
+			document.querySelector("#toneFrequencySlider").value = desiredFrequency;
+			document.querySelector("#selectedFrequencySpan").innerText = desiredFrequency;
 		}
 		if(window.localStorage["toneVolume"]) {
-			desiredVolume = parseInt(window.localStorage["toneVolume"]);
+			desiredVolume = parseFloat(window.localStorage["toneVolume"]);
+			document.querySelector("#volumeSlider").value = desiredVolume;
 		}
 		if(typeof window.localStorage["applicationMode"] === "string") {
 			switchMode(window.localStorage["applicationMode"]);
@@ -228,4 +231,6 @@ function createApp() {
 }
 
 var app = createApp();
-app.initialise();
+window.addEventListener("load", function() {
+	app.initialise();
+});
