@@ -2,7 +2,7 @@
  * @author LukeusMaximus
  */
 
-function createToneMaker() {
+function createToneGeneratorNodes() {
 	var audioContext;
 	var toneGenerator;
 	var gainNode;
@@ -25,28 +25,46 @@ function createToneMaker() {
 	gainNode.connect(audioContext.destination);
 
 	return {
+		audioContext: audioContext,
+		toneGenerator: toneGenerator,
+		gainNode: gainNode
+	}
+}
+
+function createToneMaker(toneGeneratorNodes) {
+	return {
 		get volume() {
-			return gainNode.gain.value;
+			return toneGeneratorNodes.gainNode.gain.value;
 		},
 		set volume(v) {
-			gainNode.gain.value = v;
+			toneGeneratorNodes.gainNode.gain.value = v;
 		},
 		get frequency() {
-			return toneGenerator.frequency.value;
+			return toneGeneratorNodes.toneGenerator.frequency.value;
 		},
 		set frequency(f) {
-			toneGenerator.frequency.value = f;
+			toneGeneratorNodes.toneGenerator.frequency.value = f;
 		}
 	}
 }
 
-function createACRNTreatment() {
+function createACRNTreatment(toneGeneratorNodes) {
 	// Many of this function's comments reference Tass et al. (2012), section 2.5
 	var active = false;
 	var targetFrequency; // f_t
 	var cycleFrequency = 1.5; // delta
+	var cyclePeriod = 1 / cycleFrequency;
+	var quarterCyclePeriod = cyclePeriod / 4;
 	var treatmentTones;
 	var tonesQueuedUntil;
+	var volume;
+	var currentTimeout;
+
+	function shuffle(o) {
+		var result = [];
+		for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), --i, result[i] = o[j]);
+		return result;
+	}
 
 	function calculateTreatmentTones() {
 		// Create f_1 .. f_4 which are "equidistantly placed on a logarithmic scale within the interval [0.5·f_t, 2·f_t]"
@@ -64,22 +82,45 @@ function createACRNTreatment() {
 	}
 
 	function queueFiveCycles() {
+		// Update tonesQueuedUntil if necessary
+		if(toneGeneratorNodes.audioContext.currentTime > tonesQueuedUntil) {
+			tonesQueuedUntil = toneGeneratorNodes.audioContext.currentTime;
+		}
+
 		// Queue five cycles worth of frequency and volume changes
-		// Three of four random tones
-		
-		// Two of silence
+		// Three cycles of four random tones
+		toneGeneratorNodes.gainNode.gain.setValueAtTime(volume, tonesQueuedUntil);
+		for(var i = 0; i < 3; i++) {
+			var randomTones = shuffle(treatmentTones);
+			for(var j = 0; j < randomTones.length; j++) {
+				toneGeneratorNodes.toneGenerator.frequency.setValueAtTime(randomTones[j], tonesQueuedUntil + (cyclePeriod * i) + (quarterCyclePeriod * j));
+			}
+		}
+
+		// Two cycles of silence
+		toneGeneratorNodes.gainNode.gain.setValueAtTime(0, tonesQueuedUntil + (3 * cyclePeriod));
+
+		// Update tonesQueuedUntil
+		tonesQueuedUntil += 5 * cyclePeriod;
+
+		// Queue next queue event
+		currentTimeout = setTimeout(queueFiveCycles, Math.floor(tonesQueuedUntil - toneGeneratorNodes.audioContext.currentTime));
 	}
 
 	function startTreatment() {
 		if(!active) {
-			tonesQueuedUntil = 
+			tonesQueuedUntil = 0;
+			queueFiveCycles();
 			active = true;
 		}
 	}
 
 	function stopTreatment() {
 		if(active) {
-
+			toneGeneratorNodes.gainNode.gain.cancelScheduledValues(0);
+			toneGeneratorNodes.gainNode.gain.value = 0;
+			toneGeneratorNodes.toneGenerator.frequency.cancelScheduledValues(0);
+			clearTimeout(currentTimeout);
 			active = false;
 		}		
 	}
@@ -92,14 +133,21 @@ function createACRNTreatment() {
 			targetFrequency = f;
 			calculateTreatmentTones();
 		},
+		get volume() {
+			return volume;
+		},
+		set volume(v) {
+			volume = v;
+		},
 		startTreatment: startTreatment,
 		stopTreatment: stopTreatment
 	}
 }
 
 function createApp() {
-	var toneMaker = createToneMaker();
-	var acrnTreatment = createACRNTreatment();
+	var toneGeneratorNodes = createToneGeneratorNodes();
+	var toneMaker = createToneMaker(toneGeneratorNodes);
+	var acrnTreatment = createACRNTreatment(toneGeneratorNodes);
 	var mode = "tone";
 	var desiredFrequency = 440;
 	var desiredVolume = 0.5;
@@ -107,20 +155,20 @@ function createApp() {
 	function updateFrequency() {
 		if(mode === "acrn") {
 			// Should the frequency be updated in ACRN mode?
-		} else {
-			desiredFrequency = document.querySelector("#toneFrequencySlider").value;
+		} else if(mode === "tone") {
+			desiredFrequency = parseInt(document.querySelector("#toneFrequencySlider").value);
 			document.querySelector("#selectedFrequencySpan").innerText = desiredFrequency;
-			toneGenerator.frequency.value = desiredFrequency;
+			toneMaker.frequency.value = desiredFrequency;
 			window.localStorage["tinnitusFrequency"] = desiredFrequency;
 		}
 	}
 
 	function updateVolume() {
-		desiredVolume = document.querySelector("#volumeSlider").value;
+		desiredVolume = parseFloat(document.querySelector("#volumeSlider").value);
 		if(mode === "acrn") {
 			acrnTreatment.volume = desiredVolume;
-		} else {
-			toneGenerator.volume = desiredVolume;
+		} else if(mode === "tone") {
+			toneMaker.volume = desiredVolume;
 		}
 		window.localStorage["toneVolume"] = desiredVolume;
 	}
@@ -138,30 +186,36 @@ function createApp() {
 		acrnTreatment.startTreatment();
 	}
 
-	function switchMode() {
-		if(mode === "acrn") {
-			mode = "tone";
-			switchToToneMode();
-		} else {
-			mode = "acrn";
-			switchToACRNMode();
+	function switchOff() {
+		toneMaker.volume = 0;
+		acrnTreatment.stopTreatment();
+	}
+
+	function switchMode(newMode) {
+		switch(newMode) {
+			case "tone":
+				switchToToneMode();
+				break;
+			case "acrn":
+				switchToACRNMode();
+				break;
+			case "off":
+				switchOff();
+				break;
 		}
+		mode = newMode;
+		window.localStorage["tinnitusFrequency"] = newMode;
 	}
 
 	function initialise() {
-		if(window.localStorage["applicationMode"] === "acrn") {
-			mode = "acrn"
-		}
 		if(window.localStorage["tinnitusFrequency"]) {
 			desiredFrequency = parseInt(window.localStorage["tinnitusFrequency"]);
 		}
 		if(window.localStorage["toneVolume"]) {
 			desiredVolume = parseInt(window.localStorage["toneVolume"]);
 		}
-		if(mode === "tone") {
-			switchToToneMode();
-		} else {
-			switchToACRNMode();
+		if(typeof window.localStorage["applicationMode"] === "string") {
+			switchMode(window.localStorage["applicationMode"]);
 		}
 	}
 
