@@ -52,20 +52,25 @@ function createACRNTreatment(toneGeneratorNodes) {
 	// Many of this function's comments reference Tass et al. (2012), section 2.5
 	var active = false;
 	var targetFrequency; // f_t
-	var cycleFrequency = 1.5; // delta
-	var cyclePeriod = 1 / cycleFrequency;
-	var quarterCyclePeriod = cyclePeriod / 4;
 	var treatmentTones;
 	var tonesQueuedUntil;
 	var volume;
 	var currentTimeout;
 
-	function shuffle(o) {
+	function shuffle(o){
 		var result = [];
-		for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), --i, result[i] = o[j]);
+		for(var k = 0; k < o.length; k++) {
+			result[k] = o[k];
+		}
+		for(var i = result.length; i > 0; i--) {
+			var j = Math.floor(Math.random() * i);
+			var temp = result[i-1]
+			result[i-1] = result[j];
+			result[j] = temp;
+		}
 		return result;
 	}
-
+	
 	function calculateTreatmentTones() {
 		// Create f_1 .. f_4 which are "equidistantly placed on a logarithmic scale within the interval [0.5·f_t, 2·f_t]"
 		// It's not clear what the exact tones are from this statement but here's a sensible guess:
@@ -79,32 +84,46 @@ function createACRNTreatment(toneGeneratorNodes) {
 			// f_4 = 2^(1)·f_t
 			Math.pow(2, 1) * targetFrequency,
 		];
+		treatmentTones = treatmentTones.map(function(frequency) {
+			return Math.floor(frequency);
+		});
 	}
 
 	function queueFiveCycles() {
+		// Constant definitions
+		var QUEUING_LEEWAY = 0.1; // The amount of time before the next round of five cycles that we should queue the next five cycles of changes
+		var CYCLE_FREQUENCY = 1.5; // delta
+		var CYCLE_PERIOD = 1 / CYCLE_FREQUENCY;
+		var QUARTER_CYCLE_PERIOD = CYCLE_PERIOD / 4;
+
 		// Update tonesQueuedUntil if necessary
 		if(toneGeneratorNodes.audioContext.currentTime > tonesQueuedUntil) {
 			tonesQueuedUntil = toneGeneratorNodes.audioContext.currentTime;
 		}
 
+		var generatedTones = [];
 		// Queue five cycles worth of frequency and volume changes
 		// Three cycles of four random tones
 		toneGeneratorNodes.gainNode.gain.setValueAtTime(volume, tonesQueuedUntil);
 		for(var i = 0; i < 3; i++) {
 			var randomTones = shuffle(treatmentTones);
 			for(var j = 0; j < randomTones.length; j++) {
-				toneGeneratorNodes.toneGenerator.frequency.setValueAtTime(randomTones[j], tonesQueuedUntil + (cyclePeriod * i) + (quarterCyclePeriod * j));
+				toneGeneratorNodes.toneGenerator.frequency.setValueAtTime(randomTones[j], tonesQueuedUntil + (CYCLE_PERIOD * i) + (QUARTER_CYCLE_PERIOD * j));
+				generatedTones.push(randomTones[j]);
 			}
 		}
+		console.log(generatedTones);
 
 		// Two cycles of silence
-		toneGeneratorNodes.gainNode.gain.setValueAtTime(0, tonesQueuedUntil + (3 * cyclePeriod));
+		toneGeneratorNodes.gainNode.gain.setValueAtTime(0, tonesQueuedUntil + (3 * CYCLE_PERIOD));
 
 		// Update tonesQueuedUntil
-		tonesQueuedUntil += 5 * cyclePeriod;
+		tonesQueuedUntil += 5 * CYCLE_PERIOD;
 
-		// Queue next queue event
-		currentTimeout = setTimeout(queueFiveCycles, Math.floor(tonesQueuedUntil - toneGeneratorNodes.audioContext.currentTime));
+		// Queue next queuing event
+		var secondsUntilNextQueuingEvent = tonesQueuedUntil - toneGeneratorNodes.audioContext.currentTime - QUEUING_LEEWAY;
+		var millisecondsUntilNextQueuingEvent = secondsUntilNextQueuingEvent * 1000;
+		currentTimeout = setTimeout(queueFiveCycles, millisecondsUntilNextQueuingEvent);
 	}
 
 	function startTreatment() {
