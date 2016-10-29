@@ -37,7 +37,8 @@ function createToneMaker(toneGeneratorNodes) {
 			return toneGeneratorNodes.gainNode.gain.value;
 		},
 		set volume(v) {
-			toneGeneratorNodes.gainNode.gain.value = v;
+			toneGeneratorNodes.gainNode.gain.cancelScheduledValues(0);
+			toneGeneratorNodes.gainNode.gain.linearRampToValueAtTime(v, toneGeneratorNodes.audioContext.currentTime + 0.01);
 		},
 		get frequency() {
 			return toneGeneratorNodes.toneGenerator.frequency.value;
@@ -104,7 +105,8 @@ function createACRNTreatment(toneGeneratorNodes) {
 		var generatedTones = [];
 		// Queue five cycles worth of frequency and volume changes
 		// Three cycles of four random tones
-		toneGeneratorNodes.gainNode.gain.setValueAtTime(volume, tonesQueuedUntil);
+		toneGeneratorNodes.gainNode.gain.setValueAtTime(0, tonesQueuedUntil);
+		toneGeneratorNodes.gainNode.gain.linearRampToValueAtTime(volume, tonesQueuedUntil + 0.01);
 		for(var i = 0; i < 3; i++) {
 			var randomTones = shuffle(treatmentTones);
 			for(var j = 0; j < randomTones.length; j++) {
@@ -115,7 +117,8 @@ function createACRNTreatment(toneGeneratorNodes) {
 		console.log(generatedTones);
 
 		// Two cycles of silence
-		toneGeneratorNodes.gainNode.gain.setValueAtTime(0, tonesQueuedUntil + (3 * CYCLE_PERIOD));
+		toneGeneratorNodes.gainNode.gain.setValueAtTime(volume, tonesQueuedUntil + (3 * CYCLE_PERIOD));
+		toneGeneratorNodes.gainNode.gain.linearRampToValueAtTime(0, tonesQueuedUntil + (3 * CYCLE_PERIOD) + 0.01);
 
 		// Update tonesQueuedUntil
 		tonesQueuedUntil += 5 * CYCLE_PERIOD;
@@ -137,7 +140,7 @@ function createACRNTreatment(toneGeneratorNodes) {
 	function stopTreatment() {
 		if(active) {
 			toneGeneratorNodes.gainNode.gain.cancelScheduledValues(0);
-			toneGeneratorNodes.gainNode.gain.value = 0;
+			toneGeneratorNodes.gainNode.gain.linearRampToValueAtTime(0, toneGeneratorNodes.audioContext.currentTime + 0.01);
 			toneGeneratorNodes.toneGenerator.frequency.cancelScheduledValues(0);
 			clearTimeout(currentTimeout);
 			active = false;
